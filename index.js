@@ -1,3 +1,5 @@
+require('dotenv').config()
+const Phonebook = require('./models/phonenbook')
 const cors = require('cors')
 const express = require('express')
 const morgan = require('morgan')
@@ -43,7 +45,9 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.send(persons)
+    Phonebook.find({}).then(notes => {
+        response.json(notes)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
@@ -68,20 +72,25 @@ app.post('/api/persons', (request, response) => {
             error: 'name or number is missing'
         }).end()
     }
-    if(persons.find(p => p.name === body.name)){
-        return response.status(409).json({
-            error: 'name must be unique'
-        }).end()
-    }
     
-    person = {
+    // if(persons.find(p => p.name === body.name)){
+    //     return response.status(409).json({
+    //         error: 'name must be unique'
+    //     }).end()
+    // }
+    
+    const phonebook = new Phonebook({
         id: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
         name: body.name,
         number: body.number
-    }
+    })
     
-    persons = persons.concat(person)
-    response.json(person)
+    // persons = persons.concat(person)
+    // response.json(person)
+    
+    phonebook.save().then(savedNote => {
+        response.json(savedNote)
+    })
 })
 
 const PORT = process.env.PORT || 3001
