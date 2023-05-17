@@ -11,8 +11,9 @@ app.use(express.static('build'))
 morgan.token('type', (req, res) => JSON.stringify(req.body))
 
 app.use(morgan(":method :url :status :res[content-length] - :response-time ms :type"))
+app.use(express.json())
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     let body = request.body
     
     if(!body.name || !body.number){
@@ -35,13 +36,12 @@ app.post('/api/persons', (request, response) => {
     
     // persons = persons.concat(person)
     // response.json(person)
-    
-    phonebook.save().then(savedNote => {
+    phonebook.save()
+        .then(savedNote => {
         response.json(savedNote)
-    })
+        })
+        .catch(error => next(error))
 })
-
-app.use(express.json())
 
 app.put('/api/persons/:id', (request, response, next) => {
     const body = request.body
@@ -51,7 +51,7 @@ app.put('/api/persons/:id', (request, response, next) => {
         number: body.number,
     }
     
-    Phonebook.findByIdAndUpdate(request.params.id, phonebook, {new: true})
+    Phonebook.findByIdAndUpdate(request.params.id, phonebook, {new: true, runValidators: true})
         .then(updatedNote => {
             response.json(updatedNote)
         })
@@ -99,6 +99,8 @@ const errorHandler = (error, request, response, next) => {
     
     if(error.name == 'CastError') {
         return response.status(400).send({error: 'malformated id'})
+    }else if(error.name === 'ValidationError'){
+        return response.status(400).json({error: error.message})
     }
     
     next(error)
